@@ -1,0 +1,145 @@
+Table auth_user {
+id int [pk]
+last_login TimeStamp
+is_superuser Boolean
+username CharField [unique]
+password passwordfeild
+fisrt_name CharField
+last_name CharField
+email EmailField
+is_staff Boolean
+is_Active Boolean
+date_joined DateField
+}
+
+Ref: auth_user.id > user_details.user
+Ref: auth_user.id > user_details.followers
+Ref: auth_user.id > user_details.following
+Ref: following.id > user_details.bookmarked_posts
+Ref: user_details.follow_requests > auth_user.id
+Ref: user_details.tagged_posts > posts.id
+
+Table user_details {
+id int [pk]
+user OneToOneField
+website CharField
+bio CharField
+date_of_birth DateField
+gender CharField
+phone_number CharField
+profile_picture filefeild  
+posts ManyToManyField
+stories ManyToManyField
+likes ManyToManyField
+followers ManyToManyField
+following ManyToManyField
+bookmarked_posts ManyToManyField
+follow_requests ManyToManyField
+private_account BooleanField
+verified BooleanField
+tagged_posts ManyToManyField
+blocked_users ManyToManyField
+related_people ManyToManyField //People user don't follow but has activity with
+story_highlights ManyToManyField
+user_activity ManyToManyField
+}
+Ref: auth_user.id > following.id
+Ref: story_highlights.stories > user_details.story_highlights
+Ref: user_activity.id > user_details.user_activity
+
+Table user_activity {
+id int [pk]
+type CharField(choices)
+text CharField
+activity_user ManyToManyField
+}
+Ref: user_activity.activity_user > auth_user.id
+
+Table story_highlights {
+id int [pk]
+group_name CharField
+stories ManyToManyField
+}
+
+Table following {
+id int [pk]
+user ForeignKey
+hide_story BooleanField
+hide_post BooleanField
+}
+
+Ref: posts.id > user_details.posts
+
+Table posts{
+id int [pk]
+user ForeignKey
+file filefeild
+caption CharField
+likes ManyToManyField
+comments ManyToManyField
+date_created DateTimeField
+last_login DateTimeField
+latitude CharField
+longitude CharField
+type CharField(choices)
+views PositiveIntegerField
+active BooleanField
+}
+
+Ref: likes.id > posts.likes
+
+
+Table likes{
+id int [pk]
+user ForeignKey
+crated DateTimeField
+}
+
+Ref: comments.id > posts.comments
+Ref: comments.user > auth_user.id
+Ref: comments.likes > likes.id
+
+Table comments{
+id int [pk]
+user ForeignKey
+text CharField
+likes ManyToManyField
+replies ManyToManyField
+crated DateTimeField
+}
+
+Ref: replies.id > comments.replies
+
+Table replies{
+id int [pk]
+user ForeignKey
+text CharField
+likes ManyToManyField
+crated DateTimeField
+}
+
+
+Ref: likes.user > auth_user.id
+Ref: likes.id > user_details.likes
+
+Table stories{
+id int [pk]
+user ForeignKey
+file filefeild
+views ManyToManyField
+crated DateTimeField
+active BooleanField
+}
+
+Ref: stories.views > auth_user.id
+Ref: stories.user > auth_user.id
+
+Table hashtags{
+id int [pk]
+hashtag CharField
+stories ManyToManyField
+posts ManyToManyField
+crated DateTimeField
+}
+Ref: hashtags.posts > posts.id
+Ref: hashtags.stories > stories.id
