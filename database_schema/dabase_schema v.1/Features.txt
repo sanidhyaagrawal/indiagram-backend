@@ -1,0 +1,54 @@
+Features- 
+User Loggin Auth
+User Profile
+-Bio
+-Website
+-Followers
+-Following
+-Date of Birth
+-Gender
+-Phone Number
+-All Likes
+-All Commemts
+-profile picture
+-Hashtags
+-Follow Requests
+-Stories
+-Verified Status
+-Account Privacy Settings
+-Tagged Posts
+-Story Archive //if story is not active 
+-Post Archive //if Post is not active 
+-Story Privacy Settings
+-Mute Story/Post
+-Story Highlights
+-Mute Story/Post for a perticular following user
+-User Activity (Somone liked your post, mentioned you in comments etc)
+
+Posts
+-Likes
+-Comments
+--Likes on comment
+--Replies on commnet
+
+-Post Bookmarks
+
+Future Devlopment
+
+-DM History (Sent Messages and media)
+-DM Request
+-Story Reply DM
+
+-Tagged Comments should not be a part of db as it is a comment, system will send just a nortification to user when the comment is created.
+
+-Group Chats
+-DM/Chat shared post likes
+
+---Bussniess Account Features---
+-Profile Visits
+-Reach
+-Website Clicks
+-Impressions
+--From Home
+--Prom Profile
+--From Explorer
