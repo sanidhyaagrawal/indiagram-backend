@@ -75,15 +75,15 @@ def choose_username(request):  # signup/choose-username/
         if data.get('username') == None:
             return Response({'error': "Invalid body parameter, body must contain 'username'"}, status=status.HTTP_400_BAD_REQUEST)
 
-        response, suggestions = check_or_get_username(data['username'])
-        if response == None:
-            return Response({'error': "The username {} is not available".format(data['username'])}, status=status.HTTP_401_UNAUTHORIZED)
-        elif response == False:
+        response, suggestions = check_or_get_username(data['username'].strip())
+        if response == None:  # if username not safe/invalid regex
+            return Response({'error': suggestions}, status=status.HTTP_205_RESET_CONTENT)
+        elif response == False:  # if username NOT available, returns also list of available suggestions
             returndata = {}
             returndata["error"] = "The username {} is not available".format(
-                data['username'])
+                data['username'].strip())
             returndata["suggestions"] = suggestions
-            return Response(returndata, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(returndata, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_202_ACCEPTED)
 

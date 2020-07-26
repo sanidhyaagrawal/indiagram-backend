@@ -463,9 +463,46 @@ username_regex = re.compile(
     ^                       # beginning of string
     (?!_$)                  # no only _
     (?![-.])                # no - or . at the beginning
-    (?!.*[_.-]{2})          # no __ or _. or ._ or .. or -- inside
-    [a-zA-Z0-9_.-]+         # allowed characters, atleast one must be present
+    (?![0-9]$)               # no only numbers
+    (?!.*[.]{2})            # no __ or _. or ._ or .. or -- inside
+    [a-zA-Z0-9_.]+          # allowed characters, atleast one must be present
     (?<![.-])               # no - or . at the end
+    $                       # end of string
+    """,
+    re.X,
+)
+
+trailing_periods_regex = re.compile(
+    r"""
+    ^                       # beginning of string
+    (?!.*[-.]{2})            # no __ or _. or ._ or .. or -- inside
+    $                       # end of string
+    """,
+    re.X,
+)
+
+periods_at_end_regex = re.compile(
+    r"""
+    ^                       # beginning of string
+        (?<![.-])               # no - or . at the end
+    $                       # end of string
+    """,
+    re.X,
+)
+
+periods_in_starting_regex = re.compile(
+    r"""
+    ^                       # beginning of string
+    (?![-.])                # no - or . at the beginning
+    $                       # end of string
+    """,
+    re.X,
+)
+
+only_numbers__regex = re.compile(
+    r"""
+    ^                       # beginning of string
+    (?![0-9]$)               # no only numbers
     $                       # end of string
     """,
     re.X,
@@ -474,10 +511,28 @@ username_regex = re.compile(
 
 def is_safe_username(
         username, whitelist=[], blacklist=[], regex=username_regex, max_length=30, min_length=3):
-    if max_length and (len(username) > max_length or len(username) < min_length):
-        return False
-    if not re.match(regex, username):
-        return False
+    print(username)
+    if max_length and len(username) > max_length:
+        return(False, 'Enter a name under 30 characters.')
+
+    if min_length and len(username) < min_length:
+        return(False, 'The username {} is not available'.format(username))
+
+    elif username.find("..") >= 0:
+        return(False, "You can't have more than one period in a row.")
+
+    elif username[0] == '.':
+        return(False, "You can't start your username with a period.")
+
+    elif username[-1] == '.':
+        return(False, "You can't end your username with a period.")
+
+    elif username.isnumeric():
+        return(False, "Your username cannot contain only numbers.")
+
+    elif not re.match(regex, username):
+        return(False, 'Username can only use letters numbers underscores and periods.')
+
     wordlist = get_reserved_wordlist()
     whitelist = set([each_whitelisted_name.lower()
                      for each_whitelisted_name in whitelist])
@@ -485,7 +540,8 @@ def is_safe_username(
                      for each_blacklisted_name in blacklist])
     wordlist = wordlist - whitelist
     wordlist = wordlist.union(blacklist)
-    return False if username.lower() in wordlist else True
+
+    return (False, 'The username {} is not available'.format(username)) if username.lower() in wordlist else (True, 'Available')
 
 
 def get_reserved_wordlist():
@@ -495,7 +551,7 @@ def get_reserved_wordlist():
 __all__ = ["get_reserved_wordlist"]
 
 
-existing = ['sanidhya', 'sanidhya69']
+existing = ['indiagram', 'sanidhya69']
 
 
 def isavailable(username):
@@ -547,8 +603,8 @@ def custom_mordifications(username, available):
     username = username+'x'
     available = try_addto_available(username, available)
 
-    #username = username.replace("a", "")
-    #available = try_addto_available(username, available)
+    # username = username.replace("a", "")
+    # available = try_addto_available(username, available)
 
     return(available)
 
@@ -558,7 +614,8 @@ def custom_mordifications(username, available):
 
 
 def check_or_get_username(username):
-    if is_safe_username(username):
+    _isvalid, reason = is_safe_username(username)
+    if _isvalid:
         if not isavailable(username):
             available = []
             username = username.replace(".", "")
@@ -571,4 +628,7 @@ def check_or_get_username(username):
         else:
             return(True, 'Username Available')
     else:
-        return(None, 'Invalid Username')
+        return(None, reason)
+
+
+check_or_get_username("username")
