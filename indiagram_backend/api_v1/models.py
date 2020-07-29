@@ -8,7 +8,7 @@ class user_details(models.Model):
     key = models.CharField(max_length=300, blank=True, null=True)
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=300)
-    email = models.EmailField(max_length=100)
+    email = models.EmailField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
 
     website = models.CharField(max_length=100, blank=True, null=True)

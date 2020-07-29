@@ -15,6 +15,7 @@ from django.db.models import Q
 
 from .serializers import *
 import json
+import re 
 
 # custom build functions
 from .usernames.username_suggestion import check_or_get_username
@@ -26,6 +27,12 @@ from django.utils.crypto import get_random_string
 from django.core.signing import Signer
 signer = Signer()
 
+regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
+def valid_email(email):  
+    if(re.search(regex,email)):  
+        return True
+    else:  
+        return False  
 
 def authenticate(credential, password):
     try:
@@ -46,15 +53,21 @@ def login(request):  # login/
 
     elif request.method == 'POST':
         data = request.data
+        print(data)
         if data.get('credential') == None or data.get('password') == None:
             return Response({'error': "Invalid body parameter, body must contain 'credential' and 'password'"}, status=status.HTTP_400_BAD_REQUEST)
 
         user = authenticate(
             data['credential'], data['password'])
         if user == False:
-            return Response({'error': "The Email/Username you entered doesn't belong to an account. Please check your Email/Username and try again."}, status=status.HTTP_200_OK)
+            return Response({'error_header':'Incorrect Username','error_body': "The username you entered doesn't appear to belong to an account. Please check your username and try again", "actions": ['Try Again']}, status=status.HTTP_200_OK)
         elif user == None:
-            return Response({'error': "Invalid Passowrd"}, status=status.HTTP_200_OK)
+            user = user_details.objects.get(Q(username=data['credential']) | Q(email=data['credential']))
+            if user.email != None:
+                return Response({'error_header': "Forgotten Password?", 'error_body':"We can send you an email to help you get back into your account.", "actions": ['Send Email','Try Again']}, status=status.HTTP_200_OK)
+            else: 
+                return Response({'error_header': "Incorrect password for {}".format(data['credential']), 'error_body':"The password you entered is incorrect. Please try again.", "actions": ['Try Again']}, status=status.HTTP_200_OK)
+
         else:
             serializer = loginSerializer(user)
             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)

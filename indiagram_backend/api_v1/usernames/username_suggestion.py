@@ -551,7 +551,7 @@ def get_reserved_wordlist():
 __all__ = ["get_reserved_wordlist"]
 
 
-existing = ['indiagram', 'sanidhya69']
+existing = ['indiagram', 'sanidhya69', "vansh"]
 
 
 def isavailable(username):
