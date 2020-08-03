@@ -58,6 +58,9 @@ def authenticate(credential, password):
                     return user
                 else:
                     return None
+            else:
+                return False
+      
         except:
             return False
 
@@ -75,9 +78,9 @@ def login(request):  # login/
 
         user = authenticate(
             data['credential'], data['password'])
-        print(user)    
+        print(user,user,user,user)    
         if user == False:
-            return Response({'error_header':'Incorrect Username','error_body': "The username you entered doesn't appear to belong to an account. Please check your username and try again", "actions": ['Try Again']}, status=status.HTTP_200_OK)
+            return Response({'error_header':'Incorrect Username','error_body': "The username you entered doesn't appear to belong to an account. Please check your username and try again", "actions": [{"error_code": "1001", 'error_message': 'Try Again'}]}, status=status.HTTP_200_OK)
         elif user == None:
             try:
                 user = user_details.objects.get(Q(username=data['credential']) | Q(email=data['credential']))
@@ -87,9 +90,9 @@ def login(request):  # login/
                 _PhoneNumber = _PhoneNumber.replace('-','')
                 user = user_details.objects.get(Q(complete_number=_PhoneNumber) | Q(phone_number=_PhoneNumber))
             if user.email != None:
-                return Response({'error_header': "Forgotten Password?", 'error_body':"We can send you an email to help you get back into your account.", "actions": ['Send Email','Try Again']}, status=status.HTTP_200_OK)
+                return Response({'error_header': "Forgotten Password?", 'error_body':"We can send you an email to help you get back into your account.", "actions": [{"error_code": "1004", 'error_message': 'Send Email'},{"error_code": "1001", 'error_message': 'Try Again'}]}, status=status.HTTP_200_OK)
             else: 
-                return Response({'error_header': "Incorrect password for {}".format(data['credential']), 'error_body':"The password you entered is incorrect. Please try again.", "actions": ['Try Again']}, status=status.HTTP_200_OK)
+                return Response({'error_header': "Incorrect password for {}".format(data['credential']), 'error_body':"The password you entered is incorrect. Please try again.", "actions": [{"error_code": "1001", 'error_message': 'Try Again'}]}, status=status.HTTP_200_OK)
 
         else:
             serializer = loginSerializer(user)
