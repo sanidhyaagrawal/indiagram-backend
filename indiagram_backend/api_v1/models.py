@@ -3,19 +3,33 @@ from django.contrib.auth.models import User, auth
 from datetime import datetime
 # Create your models here.
 
+class otps(models.Model):
+    token = models.CharField(max_length=300)
+    otp = models.CharField(max_length=300)
+    time_created = models.DateTimeField(editable=True)
 
+class tokenised_contact_info(models.Model):
+    key = models.CharField(max_length=300, blank=True, null=True)
+    country_code = models.CharField(max_length=6, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    email = models.CharField(max_length=200, blank=True, null=True)
+    
 class user_details(models.Model):
     key = models.CharField(max_length=300, blank=True, null=True)
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=300)
-    email = models.EmailField(max_length=100, blank=True, null=True)
+    email = models.EmailField(max_length=100,unique=True, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
 
     website = models.CharField(max_length=100, blank=True, null=True)
     bio = models.CharField(max_length=100, blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=100, blank=True, null=True)
-    phone_number = models.CharField(max_length=13, blank=True, null=True)
+
+    country_code = models.CharField(max_length=6, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    complete_number = models.CharField(max_length=20, blank=True, null=True)
+
     profile_picture = models.ImageField(
         upload_to='profile_pictures', blank=True, null=True)
     posts = models.ManyToManyField(

@@ -551,7 +551,7 @@ def get_reserved_wordlist():
 __all__ = ["get_reserved_wordlist"]
 
 
-existing = ['indiagram', 'sanidhya69', "vansh"]
+existing = ['indiagram', 'sanidhya69', "vansh", "rohan"]
 
 
 def isavailable(username):
@@ -568,7 +568,7 @@ def try_addto_available(username, available):
 
 
 def getavailable(username, available):
-    if len(username) > 6:
+    if len(username) > 5:
         center = round(len(username)/2)
         temp = username[: center] + '_' + username[center:]
         available = try_addto_available(temp, available)
