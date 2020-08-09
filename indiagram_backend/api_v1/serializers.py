@@ -5,10 +5,22 @@ from .models import *
 
 
 class loginSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = user_details
         fields = ('key', 'username')
+
+class tokenised_contact_infoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = tokenised_contact_info
+        fields = ('key', 'country_code', 'phone_number', 'email')
+
+
+class user_detailsSerializer(serializers.ModelSerializer):
+    date_of_birth = serializers.DateTimeField(format="%d-%m-%Y")
+
+    class Meta:
+        model = user_details
+        fields = '__all__'
 
 
 class username_suggestionsSerializer(serializers.ModelSerializer):

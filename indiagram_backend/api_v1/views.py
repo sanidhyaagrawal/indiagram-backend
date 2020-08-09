@@ -95,7 +95,7 @@ def login(request):  # login/
                 return Response({'error_header': "Incorrect password for {}".format(data['credential']), 'error_body':"The password you entered is incorrect. Please try again.", "actions": [{"error_code": "1001", 'error_message': 'Try Again'}]}, status=status.HTTP_200_OK)
 
         else:
-            serializer = loginSerializer(user)
+            serializer = loginSerializer(user).data
             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
@@ -108,6 +108,8 @@ def login(request):  # login/
 # returns None if username not safe/invalid regex
 ######################################################################
 
+
+
 @api_view(['POST'])
 def choose_username(request):  # signup/choose-username/
     if request.method == 'GET':
@@ -117,20 +119,18 @@ def choose_username(request):  # signup/choose-username/
         data = request.data
         if data.get('username') == None:
             return Response({'error': "Invalid body parameter, body must contain 'username'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        response, suggestions = check_or_get_username(data['username'].strip())
-        if response == None:  # if username not safe/invalid regex
-            return Response({'error': suggestions}, status=status.HTTP_205_RESET_CONTENT)
-        elif response == False:  # if username NOT available, returns also list of available suggestions
-            returndata = {}
-            returndata["error"] = "The username {} is not available".format(
-                data['username'].strip())
-            returndata["suggestions"] = suggestions
-            return Response(returndata, status=status.HTTP_200_OK)
         else:
-            return Response(status=status.HTTP_202_ACCEPTED)
-
-
+            response, suggestions = check_or_get_username(username.strip())
+            if response == None:  # if username not safe/invalid regex
+                return Response({'error': suggestions}, status=status.HTTP_205_RESET_CONTENT)
+            elif response == False:  # if username NOT available, returns also list of available suggestions
+                returndata = {}
+                returndata["error"] = "The username {} is not available".format(
+                    username.strip())
+                returndata["suggestions"] = suggestions
+                return Response(returndata, status=status.HTTP_200_OK)
+            elif response == True:
+                return Response(status=status.HTTP_202_ACCEPTED)
 
 
 
@@ -201,6 +201,7 @@ def verify_contact(request):  # signup/verify-contact/
 
     elif request.method == 'POST':
         data = request.data
+        print(data)
         if data.get('country_code') != None and data.get('phone_number') != None:
             _isValid, _Responce =  valid_phone_number(data['country_code'].strip(), data['phone_number'].strip())
             if _isValid:
@@ -235,6 +236,7 @@ def verify_otp(request):  # signup/verify-otp/
 
     elif request.method == 'POST':
         data = request.data
+        print(data)
         if data.get('otp') == None or data.get('token') == None:
             return Response({'error': "Invalid body parameter, body must contain 'otp' and 'token'"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -245,9 +247,6 @@ def verify_otp(request):  # signup/verify-otp/
             print(datetime.datetime.now().replace(tzinfo=datetime.timezone.utc))
 
             if (otp.time_created + datetime.timedelta(minutes=15)).replace(tzinfo=datetime.timezone.utc) >  datetime.datetime.now().replace(tzinfo=datetime.timezone.utc):
-
-
-                
                 token_data = signing.loads(data['token'])
                 if token_data.get('email') != None:
                     contact_token = tokenised_contact_info.objects.create(email=token_data['email'])
@@ -268,5 +267,89 @@ def verify_otp(request):  # signup/verify-otp/
             return Response({"error":"That code isn't valid. You can request a new one."}, status=status.HTTP_200_OK)
 
 
-        
+def _decode_contact_token(contact_token):
+    try:
+        token_obj = tokenised_contact_info.objects.get(key = contact_token) 
+        serializer = tokenised_contact_infoSerializer(token_obj)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+    except tokenised_contact_info.DoesNotExist:
+        return Response({'error_header': "Invalid Contact Token", 'error_body':"Request timeout, Please start over the sign-up process.", "actions": [{"error_code": "1005", 'error_message':'Retry signing up'}]}, status=status.HTTP_200_OK)
 
+
+def _Isvalid_password(password):
+    if not len(password) < 6:
+        return Response(status=status.HTTP_202_ACCEPTED)
+    else:
+        return Response({'error_header': "Password too short", 'error_body':"Password needs to be at lest 6 character long", "actions": [{"error_code": "1005", 'error_message':'Retry signing up'}]}, status=status.HTTP_200_OK)
+
+def _Isvalid_date_of_birth(date_of_birth):
+    from datetime import datetime
+
+    try:
+        bday = datetime.strptime(date_of_birth, '%d/%m/%Y')
+        if datetime.now().year - bday.year > 12:
+            return Response(status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response({'error_header': "You need to atleast 13 years old", 'error_body':"We require everyone to be at least 13 years old before they can create an account.", "actions": [{"error_code": "1006", 'error_message':'Understood'}]}, status=status.HTTP_200_OK)
+
+    except ValueError:
+        return Response({'error_header': "Invalid date of birth", 'error_body':"Invalid date of format, please retry.", "actions": [{"error_code": "1005", 'error_message':'Retry signing up'}]}, status=status.HTTP_200_OK)
+
+def _username_check(username):
+        response, suggestions = check_or_get_username(username.strip())
+        if response == None:  # if username not safe/invalid regex
+            return Response({'error_header': "Username Error", 'error_body': suggestions, "actions": [{"error_code": "1005", 'error_message':'Retry signing up'}]}, status=status.HTTP_200_OK)
+        elif response == False:  # if username NOT available, returns also list of available suggestions
+            return Response({'error_header': "Username Error", 'error_body': "The username {} is not available".format(username.strip()), "actions": [{"error_code": "1005", 'error_message':'Retry signing up'}]}, status=status.HTTP_200_OK)
+        elif response == True:
+            return Response(status=status.HTTP_202_ACCEPTED)
+
+@api_view(['POST'])
+def signup(request):  # signup/
+    from datetime import datetime
+
+    if request.method == 'GET':
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'POST':
+        data = request.data
+        print(data)
+        if data.get('username') == None or data.get('password') == None  or data.get('contact_token') == None or data.get('full_name') == None or data.get('date_of_birth') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'username', 'password', 'full_name', 'date_of_birth' and 'contact_token' "}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            username = data['username'].strip()
+            contact_token = data['contact_token']
+            password = data['password'].strip() 
+            full_name = data['full_name']
+            date_of_birth = data['date_of_birth'].strip() 
+
+            username_responce = _username_check(username)
+            if username_responce.status_code == 202: #username is correct
+
+                contact_token_responce = _decode_contact_token(contact_token)
+                if contact_token_responce.status_code == 202: #contact token is correct
+                    contact_info = contact_token_responce.data
+                    password_responce = _Isvalid_password(password)
+                    if password_responce.status_code == 202: #password is valid
+
+                        dob_responce = _Isvalid_date_of_birth(date_of_birth)
+                        if dob_responce.status_code == 202: #date of birth is valid
+                             user_obj = user_details.objects.create(username=username, password=password, name=full_name, date_of_birth=datetime.strptime(date_of_birth, '%d/%m/%Y'),email= contact_info['email'], country_code=contact_info['country_code'], phone_number=contact_info['phone_number'], complete_number=str(contact_info['country_code'])+str(contact_info['phone_number']) )
+                             user_obj.key = signer.sign(user_obj.pk).split(':')[1]
+                             user_obj.save()
+                             serializer= user_detailsSerializer(user_obj)
+                             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+                              
+                        else:    
+                            return dob_responce
+
+                    else:    
+                        return password_responce
+
+                else:
+                    return contact_token_responce
+                    
+            else:
+              return username_responce   
+                
