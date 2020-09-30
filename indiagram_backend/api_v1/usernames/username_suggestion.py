@@ -551,11 +551,12 @@ def get_reserved_wordlist():
 __all__ = ["get_reserved_wordlist"]
 
 
-existing = ['indiagram', 'sanidhya69', "vansh", "rohan"]
+#existing = ['indiagram', 'sanidhya69', "vansh", "rohan"]
 
 
 def isavailable(username):
-    if username in existing:
+    from api_v1.models import user_details
+    if user_details.objects.filter(username=username).exists():
         return(False)
     else:
         return(True)

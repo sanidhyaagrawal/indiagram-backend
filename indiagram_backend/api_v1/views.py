@@ -38,6 +38,23 @@ signer = Signer()
 ############################LOGIN FUNCTIONS###########################
 ######################################################################
 ######################################################################
+def keyisValid(key):
+    try:
+            user = user_details.objects.get(key=key)
+            return (True, user)
+    except:
+            return (False, None)
+
+def usernameisValid(username):
+    try:
+            user = user_details.objects.get(username=username)
+            return (True, user)
+    except:
+            return (False, None)
+
+
+
+
 
 def authenticate(credential, password): 
     try:
@@ -96,7 +113,7 @@ def login(request):  # login/
 
         else:
             serializer = loginSerializer(user).data
-            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+            return Response(serializer, status=status.HTTP_202_ACCEPTED)
 
 
 
@@ -120,13 +137,13 @@ def choose_username(request):  # signup/choose-username/
         if data.get('username') == None:
             return Response({'error': "Invalid body parameter, body must contain 'username'"}, status=status.HTTP_400_BAD_REQUEST)
         else:
+            username = data.get('username')
             response, suggestions = check_or_get_username(username.strip())
             if response == None:  # if username not safe/invalid regex
                 return Response({'error': suggestions}, status=status.HTTP_205_RESET_CONTENT)
             elif response == False:  # if username NOT available, returns also list of available suggestions
                 returndata = {}
-                returndata["error"] = "The username {} is not available".format(
-                    username.strip())
+                returndata["error"] = "The username {} is not available".format(username.strip())
                 returndata["suggestions"] = suggestions
                 return Response(returndata, status=status.HTTP_200_OK)
             elif response == True:
@@ -144,7 +161,7 @@ def valid_phone_number(recived_code, recived_phone_number):
     recived_phone_number = recived_phone_number.replace(' ','')
     recived_phone_number = recived_phone_number.replace('+','')
     recived_phone_number = recived_phone_number.replace('-','')
-    if not user_details.objects.all().filter(complete_number = str(recived_code).strip().replace('+' , '')+str(recived_phone_number).strip()).exists():
+    if not user_details.objects.all().filter(complete_number = str(recived_code).strip()+str(recived_phone_number).strip()).exists():
         country_codes = ["+93","+358","+355","+213","+1684","+376","+244","+1264","+672","+1268","+54","+374","+297","+61","+43","+994","+1242","+973","+880","+1246","+375","+32","+501","+229","+1441","+975","+591","+387","+267","+47","+55","+246","+673","+359","+226","+257","+855","+237","+1","+238","+1345","+236","+235","+56","+86","+61","+61","+57","+269","+242","+243","+682","+506","+225","+385","+53","+357","+420","+45","+253","+1767","+1","+593","+20","+503","+240","+291","+372","+251","+500","+298","+679","+358","+33","+594","+689","+262","+241","+220","+995","+49","+233","+350","+30","+299","+1473","+590","+1671","+502","+44","+224","+245","+592","+509","+0","+379","+504","+852","+36","+354","+91","+62","+98","+964","+353","+44","+972","+39","+1876","+81","+44","+962","+7","+254","+686","+850","+82","+383","+965","+996","+856","+371","+961","+266","+231","+218","+423","+370","+352","+853","+389","+261","+265","+60","+960","+223","+356","+692","+596","+222","+230","+262","+52","+691","+373","+377","+976","+382","+1664","+212","+258","+95","+264","+674","+977","+31","+599","+687","+64","+505","+227","+234","+683","+672","+1670","+47","+968","+92","+680","+970","+507","+675","+595","+51","+63","+64","+48","+351","+1939","+1787","+974","+40","+7","+250","+262","+590","+290","+1869","+1758","+590","+508","+1784","+685","+378","+239","+966","+221","+381","+248","+232","+65","+421","+386","+677","+252","+27","+211","+500","+34","+94","+249","+597","+47","+268","+46","+41","+963","+886","+992","+255","+66","+670","+228","+690","+676","+1868","+216","+90","+993","+1649","+688","+256","+380","+971","+44","+1","+598","+998","+678","+58","+84","+1284","+1340","+681","+967","+260","+263"]
         if recived_code in country_codes:
             if recived_code == '+91': #if number in indian
@@ -353,3 +370,4 @@ def signup(request):  # signup/
             else:
               return username_responce   
                 
+

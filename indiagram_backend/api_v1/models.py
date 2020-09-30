@@ -3,6 +3,15 @@ from django.contrib.auth.models import User, auth
 from datetime import datetime
 # Create your models here.
 
+class session_tokens(models.Model):
+    user = models.ForeignKey("user_details", on_delete=models.CASCADE)
+    token =  models.CharField(max_length=3000)
+    time_created = models.DateTimeField(editable=True)
+
+class login_attempts(models.Model):
+    user_details = models.ForeignKey("user_details", on_delete=models.CASCADE)
+    time_created = models.DateTimeField(editable=True)
+
 class otps(models.Model):
     token = models.CharField(max_length=300)
     otp = models.CharField(max_length=300)
@@ -20,6 +29,10 @@ class user_details(models.Model):
     password = models.CharField(max_length=300)
     email = models.EmailField(max_length=100,unique=True, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
+
+    #privacy settings
+    showLastsSeen= models.BooleanField(default=True)
+
 
     website = models.CharField(max_length=100, blank=True, null=True)
     bio = models.CharField(max_length=100, blank=True, null=True)
