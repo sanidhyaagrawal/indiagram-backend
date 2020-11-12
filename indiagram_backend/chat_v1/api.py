@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from .serializers import MessageModelSerializer, UserModelSerializer
 from .models import MessageModel, likedStream, lastSeen
 
-from api_v1.views import keyisValid, usernameisValid
+from api_v1.views import sessionIsValid, usernameisValid, sessionIsValid
 from api_v1.models import user_details
 
 from django.views.decorators.csrf import csrf_exempt
@@ -24,16 +24,16 @@ from channels.layers import get_channel_layer
 def messageSeen(request): 
     if request.method == 'POST':
         data = request.data
-        if data.get('key') == None or data.get('target') == None or data.get('upto_id') == None:
-            return Response({'error': "Invalid body parameter, body must contain 'key', 'target' and 'upto_id'"}, status=status.HTTP_400_BAD_REQUEST)
+        if data.get('session_token') == None or data.get('target') == None or data.get('upto_id') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'session_token', 'target' and 'upto_id'"}, status=status.HTTP_400_BAD_REQUEST)
         
-        key = data.get('key')
+        session_token = data.get('session_token')
         upto_id = data.get('upto_id')
         target = data.get('target')
 
-        keyValid, user = keyisValid(key)
+        sessionValid, user = sessionIsValid(session_token)
         usernameValid, recipient = usernameisValid(target)
-        if keyValid and usernameValid:   
+        if sessionValid and usernameValid:   
             msgs = MessageModel.objects.all().filter(Q(recipient=recipient, user=user) | Q(user=recipient, recipient=user)).filter(pk__lte=upto_id, seen = False).order_by('pk')
             #print(msgs)
             for msg in msgs:
@@ -58,15 +58,15 @@ def messageSeen(request):
 def messageLike(request): 
     if request.method == 'POST':
         data = request.data
-        if data.get('key') == None or data.get('messageID') == None or data.get('liked') == None:
-            return Response({'error': "Invalid body parameter, body must contain 'key', 'liked' and 'messageID'"}, status=status.HTTP_400_BAD_REQUEST)
+        if data.get('sessionToken') == None or data.get('messageID') == None or data.get('liked') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'sessionToken', 'liked' and 'messageID'"}, status=status.HTTP_400_BAD_REQUEST)
         
-        key = data.get('key')
+        sessionToken = data.get('sessionToken')
         messageID = data.get('messageID')
         liked = data.get('liked')
 
-        keyValid, user = keyisValid(key)
-        if keyValid:
+        sessionTokenValid, user = sessionIsValid(sessionToken)
+        if sessionTokenValid:
             try:   
                 msg = MessageModel.objects.get(Q(user=user, pk=messageID) | Q(recipient=user, pk=messageID))
             except:
@@ -95,9 +95,9 @@ def chatHistory(request):
     #using seek pagation. page_size = 15
     if request.method == 'POST':
         data = request.data
-        if data.get('key') == None or data.get('target') == None:
-            return Response({'error': "Invalid body parameter, body must contain 'key' and 'target' with optional arguments 'limit' and 'before_id'"}, status=status.HTTP_400_BAD_REQUEST)
-        key = data.get('key')
+        if data.get('sessionToken') == None or data.get('target') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'sessionToken' and 'target' with optional arguments 'limit' and 'before_id'"}, status=status.HTTP_400_BAD_REQUEST)
+        sessionToken = data.get('sessionToken')
         target = data.get('target')
         
         page_size = 30 #IMP_CONSTANT
@@ -113,9 +113,9 @@ def chatHistory(request):
         else:
             before_id = int(data.get('before_id'))
 
-        keyValid, user = keyisValid(key)
+        sessionTokenValid, user = sessionIsValid(sessionToken)
         usernameValid, recipient = usernameisValid(target)
-        if keyValid and usernameValid:   
+        if sessionTokenValid and usernameValid:   
             if before_id == False:
                 msg = MessageModel.objects.all().filter(Q(recipient=recipient, user=user) | Q(user=recipient, recipient=user)).order_by('-pk')[:limit:-1]
             else:
@@ -132,13 +132,13 @@ def chatHistory(request):
 def getMessage(request): 
     if request.method == 'POST':
         data = request.data
-        if data.get('key') == None or data.get('messageID') == None:
-            return Response({'error': "Invalid body parameter, body must contain 'key' and 'messageID'"}, status=status.HTTP_400_BAD_REQUEST)
-        key = data.get('key')
+        if data.get('sessionToken') == None or data.get('messageID') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'sessionToken' and 'messageID'"}, status=status.HTTP_400_BAD_REQUEST)
+        sessionToken = data.get('sessionToken')
         messageID = data.get('messageID')
         
-        keyValid, user = keyisValid(key)
-        if keyValid:   
+        sessionTokenValid, user = sessionIsValid(sessionToken)
+        if sessionTokenValid:   
             msg = MessageModel.objects.get(Q(user=user, pk=messageID) | Q(recipient=user, pk=messageID))
             serializer = MessageModelSerializer(msg)
             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
@@ -151,14 +151,14 @@ def getMessage(request):
 def sendMessage(request):         
     if request.method == 'POST':
         data = request.data
-        if data.get('key') == None or data.get('target') == None or data.get('body') == None:
-            return Response({'error': "Invalid body parameter, body must contain 'key', 'body' and 'target'"}, status=status.HTTP_400_BAD_REQUEST)
-        key = data.get('key')
+        if data.get('sessionToken') == None or data.get('target') == None or data.get('body') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'sessionToken', 'body' and 'target'"}, status=status.HTTP_400_BAD_REQUEST)
+        sessionToken = data.get('sessionToken')
         target = data.get('target')
         body = data.get('body')
-        keyValid, user = keyisValid(key)
+        sessionTokenValid, user = sessionIsValid(sessionToken)
         usernameValid, recipient = usernameisValid(target)
-        if keyValid and usernameValid:
+        if sessionTokenValid and usernameValid:
             message = MessageModel.objects.create(user=user, recipient=recipient, body=body)
             serializer = MessageModelSerializer(message).data
             return Response(serializer, status=status.HTTP_202_ACCEPTED)
@@ -171,17 +171,21 @@ def sendMessage(request):
 def chatUsers(request): 
     if request.method == 'POST':
         data = request.data
-        if data.get('key') == None:
-            return Response({'error': "Invalid body parameter, body must contain 'key' and optional agument 'limit'"}, status=status.HTTP_400_BAD_REQUEST)
-        key = data.get('key')
+        if data.get('sessionToken') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'sessionToken' and optional agument 'limit'"}, status=status.HTTP_400_BAD_REQUEST)
+        sessionToken = data.get('sessionToken')
         
         if data.get('limit') != None:
             limit = int(data.get('limit')) 
         else:
             limit = 15
 
-        keyValid, user = keyisValid(key)
-        if keyValid:   
+        sessionTokenValid, user = sessionIsValid(sessionToken)
+        print(sessionTokenValid)
+        if sessionTokenValid == False:   
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        
+        if sessionTokenValid == True:   
             
             #latest_users = MessageModel.filter(user=user).latest('pk').values('recipient').order_by('pk')
             
@@ -246,7 +250,7 @@ def chatUsers(request):
             #msg = MessageModel.objects.latest().filter(user=user)
             return Response(allData, status=status.HTTP_202_ACCEPTED)
         else:   
-            return Response({'error_header':'Something went wrong','error_body': "Something went wrong, please try again later.", "actions": [{"error_code": "1001", 'error_message': 'Try Again'}]}, status=status.HTTP_200_OK)
+            return Response({'error_header':'Something went wrong','error_body': "Something went wrong, please try again later.", "actions": [{"error_code": "1001", 'error_message': 'Try Again'}]}, status=status.HTTP_401_UNAUTHORIZED)
         
    
 

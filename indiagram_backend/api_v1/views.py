@@ -38,9 +38,9 @@ signer = Signer()
 ############################LOGIN FUNCTIONS###########################
 ######################################################################
 ######################################################################
-def keyisValid(key):
+def userTokenisValid(userToken):
     try:
-            user = user_details.objects.get(key=key)
+            user = user_details.objects.get(userToken=userToken)
             return (True, user)
     except:
             return (False, None)
@@ -52,8 +52,42 @@ def usernameisValid(username):
     except:
             return (False, None)
 
+def createSessionToken():
+    return secrets.token_urlsafe(256) #2848 bits security
 
+def sessionIsValid(Token):  
+    expirationTime = 120 #Minutes #IMP 
+    try:
+            token_obj = sessionToken.objects.get(sessionToken=Token)
+            print(token_obj)
+            if (token_obj.time_created + datetime.timedelta(minutes=expirationTime)).replace(tzinfo=datetime.timezone.utc) <  datetime.datetime.now().replace(tzinfo=datetime.timezone.utc):
+                token_obj.sessionToken = createSessionToken()
+                token_obj.save()
+                return (False, token_obj.user)
+            else:
+                return (True, token_obj.user)
+    except:
+            return (None, None)
 
+@api_view(['POST'])
+def getSessionToken(request):
+    if request.method == 'POST':
+        data = request.data
+        if data.get('userToken') == None:
+            return Response({'error': "Invalid body parameter, body must contain 'userToken'"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        userToken = data.get('userToken')
+        userTokenValid, user = userTokenisValid(userToken)
+        if userTokenValid:
+            try:   
+                sessionToken_obj = sessionToken.objects.get(user=user)
+            except:
+                sessionToken_obj = sessionToken.objects.create(user=user, token=createSessionToken())
+            
+            serializer = sessionTokenSerializer(sessionToken_obj).data
+            return Response(serializer, status=status.HTTP_202_ACCEPTED)
+        else:   
+            return Response({'error_header':'Something went wrong','error_body': "Something went wrong, please try again later.", "actions": [{"error_code": "1001", 'error_message': 'Try Again'}]}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 def authenticate(credential, password): 
@@ -267,14 +301,14 @@ def verify_otp(request):  # signup/verify-otp/
                 token_data = signing.loads(data['token'])
                 if token_data.get('email') != None:
                     contact_token = tokenised_contact_info.objects.create(email=token_data['email'])
-                    contact_token.key = signer.sign(contact_token.pk).split(':')[1]
+                    contact_token.sessionToken = signer.sign(contact_token.pk).split(':')[1]
                     contact_token.save()
-                    return Response({'contact_token': contact_token.key},status=status.HTTP_202_ACCEPTED)
+                    return Response({'contact_token': contact_token.sessionToken},status=status.HTTP_202_ACCEPTED)
                 elif token_data.get('country_code') != None and token_data.get('phone_number') != None:
                     contact_token = tokenised_contact_info.objects.create(country_code=token_data['country_code'],phone_number=token_data['phone_number'] )
-                    contact_token.key = signer.sign(contact_token.pk).split(':')[1]
+                    contact_token.sessionToken = signer.sign(contact_token.pk).split(':')[1]
                     contact_token.save()
-                    return Response({'contact_token': contact_token.key},status=status.HTTP_202_ACCEPTED)
+                    return Response({'contact_token': contact_token.sessionToken},status=status.HTTP_202_ACCEPTED)
 
                 else:
                     return Response({"Lethal":"Something is really wrong! Unable to decode the token."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -286,7 +320,7 @@ def verify_otp(request):  # signup/verify-otp/
 
 def _decode_contact_token(contact_token):
     try:
-        token_obj = tokenised_contact_info.objects.get(key = contact_token) 
+        token_obj = tokenised_contact_info.objects.get(sessionToken = contact_token) 
         serializer = tokenised_contact_infoSerializer(token_obj)
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
     except tokenised_contact_info.DoesNotExist:
@@ -352,7 +386,7 @@ def signup(request):  # signup/
                         dob_responce = _Isvalid_date_of_birth(date_of_birth)
                         if dob_responce.status_code == 202: #date of birth is valid
                              user_obj = user_details.objects.create(username=username, password=password, name=full_name, date_of_birth=datetime.strptime(date_of_birth, '%d/%m/%Y'),email= contact_info['email'], country_code=contact_info['country_code'], phone_number=contact_info['phone_number'], complete_number=str(contact_info['country_code'])+str(contact_info['phone_number']) )
-                             user_obj.key = signer.sign(user_obj.pk).split(':')[1]
+                             user_obj.sessionToken = signer.sign(user_obj.pk).split(':')[1]
                              user_obj.save()
                              serializer= user_detailsSerializer(user_obj)
                              return Response(serializer.data, status=status.HTTP_202_ACCEPTED)

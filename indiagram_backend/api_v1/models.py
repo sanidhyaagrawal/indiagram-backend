@@ -3,11 +3,14 @@ from django.contrib.auth.models import User, auth
 from datetime import datetime
 # Create your models here.
 
-class session_tokens(models.Model):
+class sessionToken(models.Model):
     user = models.ForeignKey("user_details", on_delete=models.CASCADE)
-    token =  models.CharField(max_length=3000)
+    sessionToken =  models.CharField(max_length=3000)
     time_created = models.DateTimeField(editable=True)
-
+    def save(self, *args, **kwargs):
+        self.time_created = datetime.now()
+        super(sessionToken, self).save(*args, **kwargs)
+      
 class login_attempts(models.Model):
     user_details = models.ForeignKey("user_details", on_delete=models.CASCADE)
     time_created = models.DateTimeField(editable=True)
@@ -18,13 +21,13 @@ class otps(models.Model):
     time_created = models.DateTimeField(editable=True)
 
 class tokenised_contact_info(models.Model):
-    key = models.CharField(max_length=300, blank=True, null=True)
+    userToken = models.CharField(max_length=300, blank=True, null=True)
     country_code = models.CharField(max_length=6, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     email = models.CharField(max_length=200, blank=True, null=True)
     
 class user_details(models.Model):
-    key = models.CharField(max_length=300, blank=True, null=True)
+    userToken = models.CharField(max_length=300, blank=True, null=True)
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=300)
     email = models.EmailField(max_length=100,unique=True, blank=True, null=True)

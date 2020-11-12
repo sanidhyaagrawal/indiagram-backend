@@ -26,3 +26,10 @@ class user_detailsSerializer(serializers.ModelSerializer):
 class username_suggestionsSerializer(serializers.ModelSerializer):
     response = serializers.CharField(max_length=200)
     suggestions = serializers.CharField(max_length=500)
+
+
+class sessionTokenSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = sessionToken
+        fields = ('sessionToken', 'time_created')

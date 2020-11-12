@@ -22,6 +22,6 @@ urlpatterns = [
     path('signup/verify-contact/', views.verify_contact, name='verify_contact'),
     path('signup/verify-otp/', views.verify_otp, name='verify_otp'),
     path('signup/create-new-user/', views.signup, name='signup'),
-
+    path('auth/getSessionToken/', views.getSessionToken, name='getSessionToken'),
 
 ]
